@@ -1,1 +1,1 @@
-# SGM
+# Imagine Before Go: Self-Supervised Generative Map for Object Goal Navigation
