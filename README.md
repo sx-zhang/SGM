@@ -8,7 +8,7 @@
 - We provide pre-trained model of [sgm](....) and [area_prediction](....). For evaluation, you can download them to the directory.
 - Download the [sgm_dataset](....).  
 
-## ObjectNav evaluation on Gibson
+## Dataset
 We use a modified version of the Gibson ObjectNav evaluation setup from [SemExp](https://github.com/devendrachaplot/Object-Goal-Navigation).
 
 1. Download the [Gibson ObjectNav dataset](https://utexas.box.com/s/tss7udt3ralioalb6eskj3z3spuvwz7v) to `$SGM_ROOT/data/datasets/objectnav/gibson`.
@@ -48,10 +48,10 @@ The `data` folder should look like this
             ├── ...
 ```
 
-## Training and Evaluation
-### Train our SGM model 
+<!-- ## Training and Evaluation -->
+<!-- ### Train our SGM model  -->
 
-### Evaluate our SGM model 
+## Evaluation 
 `sh experiment_scripts/gibson/eval_sgm.sh`
 
 <!-- ## Citing
