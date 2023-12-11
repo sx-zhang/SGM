@@ -52,7 +52,7 @@ The `data` folder should look like this
 ### Train our SGM model 
 
 ### Evaluate our SGM model 
-sh experiment_scripts/gibson/eval_sgm.sh
+`sh experiment_scripts/gibson/eval_sgm.sh`
 
 <!-- ## Citing
 If you find this project useful in your research, please consider citing: -->
