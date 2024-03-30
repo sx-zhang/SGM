@@ -107,6 +107,8 @@ class Sem_Exp_Env_Agent(MultiObjectGoal_Env):
         self.collision_map_big = None  
         self.use_small_num = 0
         self.found_goal = None
+        self.c_forward_preset = 4
+        self.c_forward = self.c_forward_preset
 
     def reset(self):
         
@@ -539,14 +541,22 @@ class Sem_Exp_Env_Agent(MultiObjectGoal_Env):
         # Deterministic Local Policy
         # ==================================================================yxy added
         if stop and planner_inputs["found_goal"] == 1:
-            curr_loc = self.sim_continuous_to_sim_map(self.get_sim_location())
-            curr_distance = self.gt_planners[self.active_goal_ix].fmm_dist[curr_loc[0], curr_loc[1]] / 20.0
-            if curr_distance <= self.args.success_distance:
-                action = 0  # Stop
+            # action = 0
+            if self.c_forward==0:
+                action =0
+                self.c_forward = self.c_forward_preset
             else:
                 action = 1
+                self.c_forward -=1
+            # curr_loc = self.sim_continuous_to_sim_map(self.get_sim_location())
+            # curr_distance = self.gt_planners[self.active_goal_ix].fmm_dist[curr_loc[0], curr_loc[1]] / 20.0
+            # if curr_distance <= self.args.success_distance:
+            #     action = 0  # Stop
+            # else:
+            #     action = 1
         # ================================================================(yxy added new)
         else:
+            self.c_forward = self.c_forward_preset
             (stg_x, stg_y) = stg
             angle_st_goal = math.degrees(math.atan2(stg_x - start[0], stg_y - start[1]))
             angle_agent = (start_o) % 360.0
