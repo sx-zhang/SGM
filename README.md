@@ -5,13 +5,12 @@
 - Clone the repository and move into the top-level directory `cd SGM`
 - Create conda environment. `conda env create -f environment.yml`
 - Activate the environment. `conda activate sgm`
-- We provide pre-trained model of [sgm](https://drive.google.com/file/d/1T0_P2fnDbXoPhEQYW8LknNAECfMWSE4Y/view?usp=sharing) and [frontier_prediction](https://drive.google.com/file/d/1Tn0q7epiMyYyIfedo2gq6wxr8fSrNwqy/view?usp=sharing). For evaluation, you can download them to the directory.
-- Download the [sgm_dataset](....).  
+- We provide pre-trained model of [sgm](https://drive.google.com/file/d/1T0_P2fnDbXoPhEQYW8LknNAECfMWSE4Y/view?usp=sharing) and [frontier_prediction](https://drive.google.com/file/d/1Tn0q7epiMyYyIfedo2gq6wxr8fSrNwqy/view?usp=sharing). For evaluation, you can download the sgm model to `$SGM_ROOT/pretrained_models/frontier.ckpt` and the frontier_prediction model to `$SGM_ROOT/pretrained_models/MAE-checkpoint-199.pth`.
 
 ## Dataset
 We use a modified version of the Gibson ObjectNav evaluation setup from [SemExp](https://github.com/devendrachaplot/Object-Goal-Navigation).
 
-1. Download the [Gibson ObjectNav dataset](https://utexas.box.com/s/tss7udt3ralioalb6eskj3z3spuvwz7v) to `$SGM_ROOT/data/datasets/objectnav/gibson`.
+1. Download the [Gibson ObjectNav dataset](https://drive.google.com/file/d/1pXiUsVFGWfCfxSEdVt2oe8sxSAj5UBZ2/view?usp=sharing) to `$SGM_ROOT/data/datasets/objectnav/gibson`.
     ```
     cd $SGM_ROOT/data/datasets/objectnav
     wget -O gibson_objectnav_episodes.tar.gz https://utexas.box.com/shared/static/tss7udt3ralioalb6eskj3z3spuvwz7v.gz
