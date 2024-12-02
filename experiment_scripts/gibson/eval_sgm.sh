@@ -10,7 +10,7 @@ python eval_sgm.py \
   --split val \
   --seed 345 \
   --eval 1 \
-  --pf_model_path sgm_pretrained_model_ckpt \
+  --pf_model_path ..pretrained_models/MAE-checkpoint-199.pth \
   -d ..experiments \
   --num_local_steps 1 \
   --exp_name "debug" \
