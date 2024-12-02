@@ -5,7 +5,7 @@
 - Clone the repository and move into the top-level directory `cd SGM`
 - Create conda environment. `conda env create -f environment.yml`
 - Activate the environment. `conda activate sgm`
-- We provide pre-trained model of [sgm](....) and [area_prediction](....). For evaluation, you can download them to the directory.
+- We provide pre-trained model of [sgm](https://drive.google.com/file/d/1T0_P2fnDbXoPhEQYW8LknNAECfMWSE4Y/view?usp=sharing) and [frontier_prediction](https://drive.google.com/file/d/1Tn0q7epiMyYyIfedo2gq6wxr8fSrNwqy/view?usp=sharing). For evaluation, you can download them to the directory.
 - Download the [sgm_dataset](....).  
 
 ## Dataset
