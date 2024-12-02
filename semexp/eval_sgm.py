@@ -462,7 +462,7 @@ def main(args=None):
     sem_map_module.eval()
 
     # Global policy
-    g_policy = RL_Policy(args, "..experiments/map_pre_v2/checkpoints/best.ckpt").to(device)
+    g_policy = RL_Policy(args, "..pretrained_models/frontier.ckpt").to(device)
     model = models_sgm.sgm_vit_base_patch16_dec512d2b()
     model_sgm = prepare_model(args.pf_model_path, model)
     needs_egocentric_transform = g_policy.needs_egocentric_transform
