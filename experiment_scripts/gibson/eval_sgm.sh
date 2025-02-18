@@ -20,9 +20,9 @@ python eval_sgm.py \
   --use_nearest_frontier \
   --total_num_scenes "5" \
   --step_test 5 \
-  --num_area 7 \
+  --num_area 9 \
   --thr 0.35 \
   --mask_num 49 \
-  --expand_ratio 0.4 \
+  --expand_ratio 0.1 \
   --print_images "1" \
   --num_pf_maps "3"
