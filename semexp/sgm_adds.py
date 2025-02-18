@@ -15,15 +15,15 @@ import numpy.ma as ma
 import scipy.signal as signal
 import scipy.io as scio
 import torch
-from semexp.sxz_hoz import get_room_graph, cal_local_map_hoz
+# from semexp.sxz_hoz import get_room_graph, cal_local_map_hoz
 from semexp.utils.visualize_tools import *
 
 # sxz use gt val map
-dataset_info_file = '..data/datasets/objectnav/gibson/v1.1/val/val_info.pbz2'
-dataset_file_path = '..data/semantic_maps/gibson/semantic_maps/'
+dataset_info_file = '/home/sxz/yxy/PONI/data/datasets/objectnav/gibson/v1.1/val/val_info.pbz2'
+dataset_file_path = '/home/sxz/yxy/PONI/data/semantic_maps/gibson/semantic_maps/'
 with bz2.BZ2File(dataset_info_file, "rb") as f:
     dataset_info_1 = cPickle.load(f)
-with open("..data/semantic_maps/gibson/semantic_maps/semmap_GT_info.json",'r') as fp:
+with open("/home/sxz/yxy/PONI/data/semantic_maps/gibson/semantic_maps/semmap_GT_info.json",'r') as fp:
     dataset_info = json.load(fp)
 
 LOCAL_MAP_SIZE = 480  # TO DO
@@ -236,120 +236,25 @@ class Location_Check(object):
         self.deadlock = False
         self.bad_target_loc = []
         self.prev_tar_loc = np.zeros((2))
-    
-    # region
-    # def set_target_loc(self, all_locs):
-    #     if self.prev_tar_loc[0]==0 and self.prev_tar_loc[1]==0:
-    #         self.prev_tar_loc = all_locs[0]
-    #     if self.deadlock:
-    #         self.bad_target_loc.append(self.prev_tar_loc)
-    #         for loc in all_locs:
-    #             if not np.any(self.bad_target_loc==loc):
-    #                 self.prev_tar_loc = loc
-    #                 break
-    #     return self.prev_tar_loc
-    
-    # def set_target_loc_v2(self, t_pfs, t_area_pfs, idx, agent_loc, area_num, thr):
-    #     t_pfs=torch.where(t_pfs>thr, 1.0, 0.0)
-    #     _, ta_x, ta_y = t_area_pfs.shape 
-    #     t_area = t_area_pfs[0].resize(ta_x * ta_y)
-    #     _, sorted_idx = torch.sort(t_area)
-    #     area_loc = torch.tensor([[sorted_idx[-1]//ta_y, sorted_idx[-1]%ta_y]])
-    #     for i in range(2, area_num+1):
-    #         area_loc = torch.cat((area_loc, torch.tensor([[sorted_idx[-i]//ta_y, sorted_idx[-i]%ta_y]])), 0)
-            
-    #     cn = idx + 2
-    #     cat_semantic_map = t_pfs[cn].resize(t_pfs.shape[1] * t_pfs.shape[2])
-    #     if cat_semantic_map.sum()==0.0:
-    #         x = torch.where(t_area_pfs[0]==torch.max(t_area_pfs[0]))
-    #         self.prev_tar_loc[0]=area_loc[0][0]
-    #         self.prev_tar_loc[1]=area_loc[0][1]
-    #         return self.prev_tar_loc
-        
-    #     # tar_loc = torch.tensor([torch.argmax(cat_semantic_map)//t_pfs.shape[2], torch.argmax(cat_semantic_map)%t_pfs.shape[2]])
-    #     t_pfs_1 =t_pfs[cn]
-    #     tar_loc = torch.tensor([torch.where(t_pfs_1==torch.max(t_pfs_1))[0][0], torch.where(t_pfs_1==torch.max(t_pfs_1))[1][0]])
-        
-    #     cos_v = area_loc.mul(tar_loc.unsqueeze(0)).sum(1)/(area_loc.square().sum(1).sqrt() * tar_loc.square().sum().sqrt())
-    #     # idx = torch.argmax(cos_v)
-    #     idx=0
-    #     for i in range(1, area_num):
-    #         if cos_v[i]>cos_v[idx]:
-    #             idx=i
-    #     results = area_loc[idx]
 
-    #     self.prev_tar_loc[0]=results[0]
-    #     self.prev_tar_loc[1]=results[1]
-    #     return self.prev_tar_loc
-    
-    # def set_target_loc_v2(self, t_pfs, t_area_pfs, idx, agent_loc, area_num, thr):
-    #     t_pfs = (torch.from_numpy(t_pfs)>thr).bool().cpu().numpy()
-    #     # t_area = np.zeros_like((t_area_pfs.shape[1] * t_area_pfs.shape[2]))
-    #     cat_semantic_map = np.zeros_like((t_pfs.shape[1], t_pfs.shape[2]))
-    #     t_area = t_area_pfs[0].cpu().numpy().reshape(t_area_pfs.shape[1] * t_area_pfs.shape[2])
-    #     cn = idx + 2
-    #     cat_semantic_map = t_pfs[cn]
-            
-    #     tar_loc1 = np.where(cat_semantic_map == np.max(cat_semantic_map))
-    #     tar_loc = [tar_loc1[0][0], tar_loc1[1][0]]
-    #     tmp = 0
-    #     self.prev_tar_loc[0]=tar_loc[0]
-    #     self.prev_tar_loc[1]=tar_loc[1]
-
-    #     sorted_idx = np.argsort(t_area)
-    #     area_loc = [[sorted_idx[-1]//t_area_pfs.shape[2], sorted_idx[-1]%t_area_pfs.shape[2]]]
-    #     for i in range(2, area_num+1):
-    #         area_loc = np.concatenate((area_loc, [[sorted_idx[-i]//t_area_pfs.shape[2], sorted_idx[-i]%t_area_pfs.shape[2]]]), 0)
-            
-    #     if cat_semantic_map.sum()==0.0:
-    #         self.prev_tar_loc=area_loc[0]
-    #         return self.prev_tar_loc
-    #     x = np.dot(area_loc, tar_loc)
-    #     z = np.square(area_loc)
-    #     y =np.sum(z,1)
-    #     cos_v = x/np.sqrt(y)
-    #     idx = np.argmax(cos_v)
-    #     results = area_loc[idx]
-        
-    #     self.prev_tar_loc[0]=results[0]
-    #     self.prev_tar_loc[1]=results[1]
-    #     return self.prev_tar_loc
-    # endregion
-    
     
     def set_target_loc_v2(self, t_pfs, t_area_pfs, idx, agent_loc, area_num, thr):
-        # t_pfs[np.where(t_pfs<thr)] = 0
-        # cat_semantic_map = np.zeros_like((t_pfs.shape[1], t_pfs.shape[2]))
-        t_area = t_area_pfs[0]#.cpu().numpy()
+        t_pfs = torch.from_numpy(t_pfs).to(t_area_pfs.device)
         cn = idx + 2
-        cat_semantic_map = t_pfs[cn]
-        cat_semantic_map[np.where(cat_semantic_map<thr)] = 0
-        if cat_semantic_map.sum()==0.0:
-            area_loc = torch.where(t_area == torch.max(t_area))
-            self.prev_tar_loc[0]=area_loc[0][0]
-            self.prev_tar_loc[1]=area_loc[1][0]
-            return self.prev_tar_loc
-            
-        tar_loc = np.where(cat_semantic_map == np.max(cat_semantic_map))
-        tmp = -1
-        flag = 0
+        cat_semantic_map = t_pfs[cn].to(t_area_pfs.device)
+        cat_semantic_map = torch.where(cat_semantic_map<thr, torch.tensor(0.0).to(cat_semantic_map.device), cat_semantic_map)
+        
+        t_area = t_area_pfs[0]
+
+        new_map = cat_semantic_map+t_area
+        
+        tar_loc = torch.where(new_map == torch.max(new_map))
         self.prev_tar_loc[0]=tar_loc[0][0]
         self.prev_tar_loc[1]=tar_loc[1][0]
-        # return self.prev_tar_loc
-        for i in range(area_num):
-            area_loc = torch.where(t_area == torch.max(t_area))
-            t_area[area_loc]= 0
-            x = cosVector([tar_loc[0][0]-agent_loc[0],tar_loc[1][0]-agent_loc[1]],[area_loc[0][0]-agent_loc[0],area_loc[1][0]-agent_loc[1]])
-            if (x>tmp or flag==0):
-                flag = 1
-                tmp = x
-                self.prev_tar_loc[0]=area_loc[0][0]
-                self.prev_tar_loc[1]=area_loc[1][0]
         return self.prev_tar_loc
     
     
     def set_target_loc_v3(self, t_area_pfs): # use area policy only
-        # t_area = np.zeros_like((t_area_pfs.shape[1], t_area_pfs.shape[2]))
         t_area = t_area_pfs[0]
         area_loc = torch.where(t_area == torch.max(t_area))
         self.prev_tar_loc[0]=area_loc[0][0]
