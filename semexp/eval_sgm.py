@@ -24,7 +24,7 @@ from semexp.model_pf import RL_Policy
 from semexp.utils.storage import GlobalRolloutStorage
 from torch.utils.tensorboard import SummaryWriter
 
-from semexp.sgm_adds1 import *
+from semexp.sgm_adds import *
 
 import torchvision.transforms.functional as F
 from torchvision.transforms import Resize 
