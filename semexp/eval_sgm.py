@@ -8,7 +8,7 @@ from collections import deque
 # os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
 import gym
 import numpy as np
-import SGM.semexp.models_sgm_cross as models_sgm
+import semexp.models_sgm_cross as models_sgm
 
 import sys
 sys.path.append("..")
@@ -24,7 +24,7 @@ from semexp.model_pf import RL_Policy
 from semexp.utils.storage import GlobalRolloutStorage
 from torch.utils.tensorboard import SummaryWriter
 
-from semexp.sgm_adds import *
+from semexp.sgm_adds1 import *
 
 import torchvision.transforms.functional as F
 from torchvision.transforms import Resize 
@@ -78,22 +78,10 @@ def model_inference(x, model, path, mask_num, s=16, return_fig=False):
     if (not torch.is_tensor(x)):
         x = torch.from_numpy(x)
     h = x.shape[1] // s
-    
-    # visualize_semmap(x.numpy(), os.path.join(path,'input.png'))
-    
-    # # mask generate
-    # mask_generator = RandomMaskingGenerator(h, 0.75, True)
-    # mask = torch.tensor(mask_generator()).to(x.device).to(torch.bool).unsqueeze(0)
-    
+
     # make it a batch-like
     x = x.unsqueeze(dim=0)
     mask = get_mask(x, mask_num)
-    # x = x.unsqueeze(dim=0)
-    # px = model.patchify(x)
-    # mask, v_num = get_mask(px, mask_num)
-    # if v_num == 196.:
-    #     return x[0]
-    # px = model.patchify(x)
     
     loss, y, mask = model(x.float(), mask)
     
@@ -105,11 +93,9 @@ def model_inference(x, model, path, mask_num, s=16, return_fig=False):
     # unnormalize y
     # y = torch.where(y>0.7,1.0,0.0)
     y = model.unpatchify(y, c=x.shape[1])
-    # channel filter
-    # n,c,h,w = y.shape
-    # t_y = y.view(c, h*w).transpose(0,1)
-    # in_t_y = t_y.max(1)[1]
+
     y = y.detach().cpu()
+    return y[0]
     # y = torch.from_numpy(signal.medfilt(y,3))
     debug = y[0,:,208:,208:]
     # visualize the mask
@@ -117,47 +103,8 @@ def model_inference(x, model, path, mask_num, s=16, return_fig=False):
     mask = mask.unsqueeze(-1).repeat(1, 1, s**2 *x.shape[1])  # (N, H*W, p*p*3)
     mask = model.unpatchify(mask, c=x.shape[1])  # 1 is removing, 0 is keeping
 
-    # masked image
-    im_masked = (x * (1 - mask.float()))[0]
-    # im_masked = im_masked[0].numpy()
-
-    im_paste = (y * mask.float())[0]
-    # im_paste = im_paste[0].numpy()
-    result = im_paste
-    # result[0,:2] = result[0,:2] / result[0,:2].max()
-    result = result / result.max()
-    
-    # # # free place
-    result = result.cpu().numpy()
-    selem = skimage.morphology.disk(3)
-    free_temp = cv2.erode(result[0], selem)
-    selem = skimage.morphology.disk(7)
-    result[0] = cv2.dilate(free_temp, selem)
-    # # obstacle
-    # # selem = skimage.morphology.square(2)
-    # # free_temp = cv2.erode(org_map[1], selem)
-    # # org_map[1] = cv2.dilate(free_temp, selem)
-    selem = skimage.morphology.square(7)
-    result[1] = result[1]*0.8
-    free_temp = cv2.erode(result[1], selem)
-    selem = skimage.morphology.square(2)
-    result[1] = cv2.dilate(free_temp, selem)
-    
-    selem = skimage.morphology.square(2)
-    result[2:] = cv2.dilate(result[2:], selem)
-    
-    # im_masked[:2] = im_masked[:2] * np.max(result[:2])
-    # im_masked[2:] = im_masked[2:] * np.max(result[2:])
-    result = torch.from_numpy(result) + im_masked
-    
-    # visualize_semmap(y[0].numpy(),os.path.join(path,'y_origin.png'))
-    # visualize_semmap(im_masked[0].numpy(), os.path.join(path,'mask{}.png'.format(int(idx*0.1))))
-    # visualize_semmap(im_paste[0].numpy(),os.path.join(path,'recons+visible{}.png'.format(int(idx*0.1))))
-    # visualize_semmap(im_masked, os.path.join(path,'mask.png'))
-    # visualize_semmap(result, os.path.join(path,'reco224.png'))
-    
-    # result = x * (1 - mask.float()) + y * mask.float()
-    return result
+    result = x * (1 - mask.float()) + y * mask.float()
+    return result[0]
 
 def max1(a,b):
     if a>b:
@@ -642,11 +589,6 @@ def main(args=None):
                 idx = current_episodes["object_ids"][0]
                 
                 goal_loc, sem_map_gt = gt_sem_map(current_episodes)
-                # sg_r, sg_c, range_map = gt_stg(goal_loc, sem_map_gt, agent_locations[e])
-                # goal_maps[e][sg_r, sg_c] = 1
-                # loc_checker[e].check_deadlock()
-                # target_loc = gt_stg_v2(goal_loc, sem_map_gt, agent_locations[e])
-                # good_target_loc = loc_checker[e].set_target_loc_v2(t_pfs[e], t_area_pfs[e], idx)
                 
                 root_path[e] = '..test_vis/{}/{}/{}'.format(current_episodes["scene_id"].split('/')[1].split('.')[0], current_episodes["episode_id"], 0)
                 # if not os.path.exists(root_path[e]):
@@ -658,71 +600,19 @@ def main(args=None):
                 model_input, loc_s = data_precompute(in_semmap[e], 0)
                 if loc_s[2]==0:
                     good_target_loc = loc_checker[e].set_target_loc_v3(t_area_pfs[e])
-                    # good_target_loc = loc_checker[e].set_target_loc_hoz_frontier(args.num_area, t_area_pfs[e], local_map[e,4:19,:,:],agent_locations[e], idx, area_size=10)
                 else:
                     result_map[e] = model_inference(model_input, model_sgm, root_path[e], args.mask_num)
                     result_map[e] = map_zoom(in_semmap[e], result_map[e], loc_s)
                     good_target_loc = loc_checker[e].set_target_loc_v2(result_map[e], t_area_pfs[e], idx, agent_locations[e], args.num_area, args.thr)
-                    # good_target_loc = loc_checker[e].set_target_loc_hoz_frontier(args.num_area, t_area_pfs[e], local_map[e,4:19,:,:],agent_locations[e], idx, area_size=10)
-                    
+
                 
                 sg_c = int(good_target_loc[1])
                 sg_r = int(good_target_loc[0])
                 goal_maps[e][sg_r, sg_c] = 1
                 
-                # ===== visualize goal and subgoal in GT map (sxz) =====
+                # ===== visualize goal and subgoal in GT map =====
                 sem_map_gt_vis = sem_map_gt.copy()
-                # sem_map_gt_vis[goal_loc] = 4
-                # # sem_map_gt_vis[sem_map_2 == 1] = 4
-                # sem_map_gt_vis[agent_locations[e][0]-3:agent_locations[e][0]+3,agent_locations[e][1]-3:agent_locations[e][1]+3] = 3
-                # sem_map_gt_vis[sg_r-3:sg_r+3, sg_c-3:sg_c+3] = 3
-                # t_area_pfs[e, 0, sg_r-3:sg_r+3, sg_c-3:sg_c+3] = 3
-                # # sem_map_gt_vis[goalt[1]-3:goalt[1]+3, goalt[0]-3:goalt[0]+3] = 4
                 sxz_sem_maps[e] = sem_map_gt_vis
-                # ================================================================================(added new sxz)
-                
-    # region      
-    # if False:
-    #     ############################################################################################
-    #     # Visualize for debugging
-    #     ############################################################################################
-    #     # Process maps
-    #     g_obs_old = g_policy.do_proc(g_obs_old) # (B, N, H, W)
-    #     g_obs_new = g_policy.do_proc(g_obs) # (B, N, H, W)
-    #     # Convert to RGB
-    #     g_obs_old = g_obs_old.cpu().numpy()
-    #     g_obs_new = g_obs_new.cpu().numpy()
-    #     for e in range(g_obs_old.shape[0]):
-    #         if e > 1:
-    #             break
-    #         g_obs_old_rgb = PFDataset.visualize_map(g_obs_old[e])
-    #         g_obs_new_rgb = PFDataset.visualize_map(g_obs_new[e])
-    #         # Mark agent positions on the map
-    #         cx, cy = center_locs[e]
-    #         cx, cy = int(cx), int(cy)
-    #         g_obs_old_rgb[cx - 5 : cx + 6, cy - 5 : cy + 6, :] = np.array([255, 0, 0])
-    #         cx, cy = g_obs_new_rgb.shape[0] // 2, g_obs_new_rgb.shape[1] // 2
-    #         cx, cy = int(cx), int(cy)
-    #         g_obs_new_rgb[cx - 5 : cx + 6, cy - 5 : cy + 6, :] = np.array([255, 0, 0])
-    #         # Mark goal positions on the map
-    #         cx, cy = global_goals[e]
-    #         g_obs_old_rgb[cx - 5 : cx + 6, cy - 5 : cy + 6, :] = np.array([0, 0, 255])
-    #         cx, cy = global_goals_new[e]
-    #         g_obs_new_rgb[cx - 5 : cx + 6, cy - 5 : cy + 6, :] = np.array([0, 0, 255])
-    #         imageio.imwrite(
-    #             os.path.join(
-    #                 dump_dir, 'proc_{}_old_semmap_{:05d}.png'.format(e, 0)
-    #             ),
-    #             g_obs_old_rgb
-    #         )
-    #         imageio.imwrite(
-    #             os.path.join(
-    #                 dump_dir, 'proc_{}_new_semmap_{:05d}.png'.format(e, 0)
-    #             ),
-    #             g_obs_new_rgb
-    #         )
-    # endregion
-    
 
     planner_inputs = [{} for e in range(num_scenes)]
 
@@ -751,8 +641,6 @@ def main(args=None):
             p_input["full_map_pred"] = result_map[e]
             p_input["area_pred"] = (t_area_pfs).cpu().numpy()[e][0]
             p_input["root_path"] = root_path[e]
-            # p_input["goal_id"] = infos[e]["goal_cat_id"]
-            # p_input["target_obj"] = local_map[e, infos[e]["goal_cat_id"]+4, :, :].cpu().numpy()
 
     obs, _, done, infos = envs.plan_act_and_preprocess(planner_inputs)
 
@@ -1035,45 +923,13 @@ def main(args=None):
                     # goal_loc, sem_map_gt = gt_sem_map(current_episodes)
                     # sxz_sem_maps[e] = sem_map_gt # added new sxz
             else:
-                for e in range(num_scenes):
-                    # region
-                    # fmap = frontier_maps[e].cpu().numpy()
-                    # goal_maps[e][fmap] = 1
-                    # ================ Visualize for debugging ======================
-                    # kernel = np.ones((5, 5), dtype=np.uint8)
-                    # fmap = cv2.morphologyEx((fmap * 255.0).astype(np.uint8), cv2.MORPH_DILATE, kernel)
-                    # obs_map = np.rint(planner_inputs[e]['obs_map'])
-                    # exp_map = np.rint(planner_inputs[e]['exp_map'])
-                    # vis_map = np.zeros((*obs_map.shape, 3), dtype=np.uint8)
-                    # # Green is free
-                    # vis_map[:, :, 1] = (((1 - obs_map) * exp_map) * 255.0).astype(np.uint8)
-                    # # Blue is obstacles
-                    # vis_map[:, :, 0] = (obs_map * exp_map * 255.0).astype(np.uint8)
-                    # # Red is frontier
-                    # vis_map[:, :, 2] = fmap
-                    # vis_map[fmap > 0, 1]  = 0
-                    # cv2.imshow("Frontier map", vis_map)
-                    # cv2.waitKey(0)
-                    # gt_map (new)
-                    # endregion
-                    
+                for e in range(num_scenes):             
                     current_episodes = envs.get_current_episodes()[e]
                     idx = current_episodes["object_ids"][0]
 
                     goal_loc, sem_map_gt = gt_sem_map(current_episodes)                           ###### eval test
-                    
-                    # region
-                    # sg_r, sg_c, range_map = gt_stg(goal_loc, sem_map_gt,agent_locations[e])
-                    # goal_maps[e][sg_r, sg_c] = 1
-                    # if loc_checker[e].check_deadlock() or flag_change_loc == 1:
-                    # loc_checker[e].check_deadlock()
-                    # target_loc = gt_stg_v2(goal_loc, sem_map_gt, agent_locations[e])              ######### eval test
-                    # good_target_loc = loc_checker[e].set_target_loc(target_loc)                   #########
-                    # good_target_loc = loc_checker[e].set_target_loc_v2(t_pfs[e], t_area_pfs[e], idx)
-                    # good_target_loc = loc_checker[e].set_target_loc_v2(t_pfs[e], t_area_pfs[e], idx)
-                    # endregion
-                    
-                    if True:#step % args.step_test==0:
+
+                    if step % args.step_test==0:
                         root_path[e] = '..test_vis/{}/{}/{}'.format(current_episodes["scene_id"].split('/')[1].split('.')[0], current_episodes["episode_id"], step)
                         # if not os.path.exists(root_path[e]):
                         #     os.makedirs(root_path[e])
@@ -1086,25 +942,13 @@ def main(args=None):
                         
                         # if True:#step%args.step_test==0:
                         resmap, flag_c = cal_res(in_semmap[e], model_sgm, root_path[e], loc_s[2], args.expand_ratio, args.mask_num)
-                        # visualize_semmap(resmap, os.path.join(root_path[e], 'result480.png'))
-                        # vis_map(sem_map_gt[locs_all[e][0]:locs_all[e][0]+locs_all[e][2],locs_all[e][1]:locs_all[e][1]+locs_all[e][2]], os.path.join(root_path[e], 'gt224.png'))
                         result_map[e] = resmap.copy()
-                        # else:
-                        # flag_c = 1
-                            
-                        # result_map[e] = t0+t1+t2+in_semmap[e]
-                        # t2[:2][(t2[:2]<0.8).astype(np.bool)] = 0
                         if flag_c == 0:
-                        # result_map[e] = np.maximum(result_map[e], in_semmap[e])
-                        # visualize_semmap(result_map[e], os.path.join(root_path, 'result480.png'))
-                        # visualize_semmap(result_map[e][:,loc_s[0]:loc_s[0]+loc_s[2],loc_s[1]:loc_s[1]+loc_s[2]], os.path.join(root_path, 'result224.png'))
                             good_target_loc = loc_checker[e].set_target_loc_v2(resmap, t_area_pfs[e], idx, agent_locations[e], args.num_area, args.thr)
                         else:
                             good_target_loc = loc_checker[e].set_target_loc_v3(t_area_pfs[e])
-                        # good_target_loc = loc_checker[e].set_target_loc_hoz_frontier(args.num_area, t_area_pfs[e], local_map[e,4:19,:,:],agent_locations[e], idx, area_size=10)
                     else:
                         good_target_loc = loc_checker[e].set_target_loc_v3(t_area_pfs[e])
-                        # good_target_loc = loc_checker[e].set_target_loc_hoz_frontier(args.num_area, t_area_pfs[e], local_map[e,4:19,:,:],agent_locations[e], idx, area_size=10)
 
                     sg_c = int(good_target_loc[1])
                     sg_r = int(good_target_loc[0])
@@ -1119,9 +963,6 @@ def main(args=None):
                     # # sem_map_gt_vis[goalt[1]-3:goalt[1]+3, goalt[0]-3:goalt[0]+3] = 4
                     sxz_sem_maps[e] = sem_map_gt.copy()
                     
-                    # visualize_semmap(resmap, os.path.join(root_path, 'test.png'))
-                    # visualize_semmap(result_map[e], os.path.join(root_path, 'test1.png'))
-                    # ==================================================================================(added new yxy)
 
         for e in range(num_scenes):
             cn = infos[e]["goal_cat_id"] + 4
@@ -1163,9 +1004,6 @@ def main(args=None):
                 p_input["full_map_pred"] = result_map[e]
                 p_input["area_pred"] = (t_area_pfs).cpu().numpy()[e][0]
                 p_input["root_path"] = root_path[e]
-                # p_input["goal_id"] = infos[e]["goal_cat_id"]
-                # p_input["target_obj"] = local_map[e, infos[e]["goal_cat_id"]+4, :, :].cpu().numpy()
-                # 1 17 480 480 放在gt前面
                 pass
 
         obs, _, done, infos = envs.plan_act_and_preprocess(planner_inputs)
