@@ -135,7 +135,7 @@ def get_args():
         "-el",
         "--max_episode_length",
         type=int,
-        default=300,
+        default=500,
         help="""Maximum episode length""",
     )
     parser.add_argument(
