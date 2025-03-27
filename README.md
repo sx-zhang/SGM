@@ -53,5 +53,12 @@ The `data` folder should look like this
 ## Evaluation 
 `sh experiment_scripts/gibson/eval_sgm.sh`
 
+## Training
+Download the [training_gibson dataset](https://drive.google.com/file/d/1M73oPzXwhhS20s2zDE848MPqYOpDhZEZ/view?usp=sharing) to `$SGM_ROOT/SGM_train/mapdata/gibson`.
+
+1. Create conda environment. `conda env create -f SGM_train/environment.yml`
+2. Activate the environment. `conda activate sgm_train`
+3. `sh SGM_train/run_train.sh`
+
 <!-- ## Citing
 If you find this project useful in your research, please consider citing: -->
